@@ -1,0 +1,51 @@
+# Source files
+src/
+tests/
+
+# Configuration files
+.eslintrc.js
+.prettierrc
+tsconfig.json
+tsconfig.cjs.json
+vitest.config.ts
+fix-examples.cjs
+
+# Build artifacts
+*.tsbuildinfo
+coverage/
+
+# Development files
+node_modules/
+downloads/
+scripts/
+
+# GitHub specific files (not needed in npm package)
+.github/
+
+# Git files
+.git/
+.gitignore
+.github/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Lock files
+package-lock.json
+
+# Environment
+.env
+.env.*
