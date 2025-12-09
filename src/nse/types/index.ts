@@ -110,6 +110,51 @@ export interface OptionChainData {
   };
 }
 
+// V3 Option Chain Types
+export interface OptionChainV3Params {
+  symbol: string;
+  type?: "Indices" | "Equity"; // V3 API uses capitalized values
+  expiry?: string; // Format: "DD-Mon-YYYY" e.g., "09-Dec-2025"
+}
+
+export interface OptionLegV3 {
+  strikePrice: number;
+  expiryDate: string;
+  underlying: string;
+  identifier: string;
+  openInterest: number;
+  changeinOpenInterest: number;
+  pchangeinOpenInterest: number;
+  totalTradedVolume: number;
+  impliedVolatility: number;
+  lastPrice: number;
+  change: number;
+  pchange: number;
+  totalBuyQuantity: number;
+  totalSellQuantity: number;
+  buyPrice1: number;
+  buyQuantity1: number;
+  sellPrice1: number;
+  sellQuantity1: number;
+  underlyingValue: number;
+  optionType: string | null;
+}
+
+export interface OptionChainV3DataItem {
+  expiryDates: string;
+  strikePrice: number;
+  CE?: OptionLegV3;
+  PE?: OptionLegV3;
+}
+
+export interface OptionChainV3Response {
+  records: {
+    timestamp: string;
+    underlyingValue: number;
+    data: OptionChainV3DataItem[];
+  };
+}
+
 export interface CompiledOptionChain {
   expiry: string;
   timestamp: string;

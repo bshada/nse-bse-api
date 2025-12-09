@@ -115,6 +115,19 @@ export class NSEClient {
   async getFuturesExpiry(index: any = "nifty") { return this.options.getFuturesExpiry(index); }
   async compileOptionChain(symbol: string, expiryDate: Date) { return this.options.compileOptionChain(symbol, expiryDate); }
 
+  // V3 Option Chain API methods
+  async optionChainV3(params: { symbol: string; type?: "Indices" | "Equity"; expiry?: string }) { 
+    return this.options.getOptionChainV3(params); 
+  }
+  async getExpiryDatesV3(symbol: string) { return this.options.getExpiryDatesV3(symbol); }
+  async filteredOptionChainV3(symbol: string, expiry?: string, strikeRange?: number) { 
+    return this.options.getFilteredOptionChainV3(symbol, expiry, strikeRange); 
+  }
+  async compileOptionChainV3(symbol: string, expiry: string) { 
+    return this.options.compileOptionChainV3(symbol, expiry); 
+  }
+  static maxpainV3(optionChain: any, expiry: string) { return OptionsApi.calculateMaxPainV3(optionChain, expiry); }
+
   async fetch_equity_historical_data(params: any) { return this.historical.fetchEquityHistoricalData(params); }
   async fetch_historical_vix_data(params: any = {}) { return this.historical.fetchHistoricalVixData(params); }
   async fetch_historical_fno_data(params: any) { return this.historical.fetchHistoricalFnoData(params); }

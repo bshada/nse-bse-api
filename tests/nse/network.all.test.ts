@@ -128,23 +128,79 @@ describe('NSE API - All Tests', () => {
       expect(lots && typeof lots).toBe('object');
     });
 
-    it('optionChain(), getFuturesExpiry(), compileOptionChain()', async () => {
+    it('optionChain(), getExpiryDatesV3(), compileOptionChain()', async () => {
       try {
+        // optionChain now uses v3 API internally
         const chain = await nse.optionChain('NIFTY');
         expect(chain).toBeTruthy();
+        expect(chain.records).toBeTruthy();
+        expect(chain.records.underlyingValue).toBeGreaterThan(0);
+        expect(Array.isArray(chain.records.data)).toBe(true);
 
-        const expiries = await nse.getFuturesExpiry('nifty');
+        // Get expiry dates using v3 API
+        const expiries = await nse.getExpiryDatesV3('NIFTY');
         expect(Array.isArray(expiries)).toBe(true);
+        expect(expiries.length).toBeGreaterThan(0);
+
         if (expiries.length > 0) {
+          // Parse expiry string to Date for legacy compileOptionChain
           const [dd, mmm, yyyy] = expiries[0].split('-');
           const expiryDate = new Date(`${dd} ${mmm} ${yyyy}`);
           const oc = await nse.compileOptionChain('NIFTY', expiryDate);
           expect(oc).toBeTruthy();
           expect(oc.chain).toBeTruthy();
+          expect(oc.underlying).toBeGreaterThan(0);
+          expect(oc.atm).toBeGreaterThan(0);
         }
       } catch (error) {
         if (error instanceof Error && error.message.includes('401')) {
           console.warn('Skipping option chain tests due to API rate limiting (401)');
+          expect(true).toBe(true);
+        } else {
+          throw error;
+        }
+      }
+    });
+
+    it('optionChainV3(), compileOptionChainV3(), filteredOptionChainV3()', async () => {
+      try {
+        // Test v3 option chain without expiry (gets all expiries)
+        const chainV3 = await nse.optionChainV3({ symbol: 'NIFTY' });
+        expect(chainV3).toBeTruthy();
+        expect(chainV3.records).toBeTruthy();
+        expect(chainV3.records.underlyingValue).toBeGreaterThan(0);
+        expect(Array.isArray(chainV3.records.data)).toBe(true);
+
+        // Test getting expiry dates
+        const expiriesV3 = await nse.getExpiryDatesV3('NIFTY');
+        expect(Array.isArray(expiriesV3)).toBe(true);
+        expect(expiriesV3.length).toBeGreaterThan(0);
+
+        // Test v3 option chain with specific expiry
+        if (expiriesV3.length > 0) {
+          const expiry = expiriesV3[0];
+          const chainWithExpiry = await nse.optionChainV3({ symbol: 'NIFTY', expiry });
+          expect(chainWithExpiry).toBeTruthy();
+          expect(chainWithExpiry.records.data.length).toBeGreaterThan(0);
+
+          // Test compiled option chain v3
+          const compiledV3 = await nse.compileOptionChainV3('NIFTY', expiry);
+          expect(compiledV3).toBeTruthy();
+          expect(compiledV3.chain).toBeTruthy();
+          expect(compiledV3.underlying).toBeGreaterThan(0);
+          expect(compiledV3.atm).toBeGreaterThan(0);
+          expect(typeof compiledV3.pcr).toBe('number');
+
+          // Test filtered option chain v3
+          const filteredV3 = await nse.filteredOptionChainV3('NIFTY', expiry, 5);
+          expect(filteredV3).toBeTruthy();
+          expect(filteredV3.underlyingValue).toBeGreaterThan(0);
+          expect(filteredV3.atmStrike).toBeGreaterThan(0);
+          expect(Array.isArray(filteredV3.data)).toBe(true);
+        }
+      } catch (error) {
+        if (error instanceof Error && error.message.includes('401')) {
+          console.warn('Skipping v3 option chain tests due to API rate limiting (401)');
           expect(true).toBe(true);
         } else {
           throw error;
@@ -362,6 +418,24 @@ describe('NSE API - All Tests', () => {
       };
       const strike = NSE.maxpain(optionChain as any, expiry);
       expect([100, 110, 120]).toContain(strike);
+    });
+
+    it('maxpainV3 computes strike with maximum pain for v3 chain format', () => {
+      const expiry = '26-Sep-2025';
+
+      const optionChainV3 = {
+        records: {
+          timestamp: '26-Sep-2025 15:30:00',
+          underlyingValue: 25000,
+          data: [
+            { expiryDates: expiry, strikePrice: 24900, CE: { openInterest: 1000 }, PE: { openInterest: 500 } },
+            { expiryDates: expiry, strikePrice: 25000, CE: { openInterest: 800 }, PE: { openInterest: 800 } },
+            { expiryDates: expiry, strikePrice: 25100, CE: { openInterest: 500 }, PE: { openInterest: 1000 } },
+          ]
+        }
+      };
+      const strike = NSE.maxpainV3(optionChainV3 as any, expiry);
+      expect([24900, 25000, 25100]).toContain(strike);
     });
   });
 });
