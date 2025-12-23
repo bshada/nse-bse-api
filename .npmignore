@@ -1,6 +1,7 @@
 # Source files
 src/
 tests/
+test-outputs/
 
 # Configuration files
 .eslintrc.js

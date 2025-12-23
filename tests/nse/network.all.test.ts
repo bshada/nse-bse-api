@@ -4,6 +4,17 @@ import os from 'os';
 import path from 'path';
 import { NSE } from '../../src/index.js';
 
+// Helper to write test outputs to JSON files
+const OUTPUT_DIR = path.join(process.cwd(), 'test-outputs');
+
+function writeOutput(category: string, data: any): void {
+  if (!fs.existsSync(OUTPUT_DIR)) {
+    fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+  }
+  const filePath = path.join(OUTPUT_DIR, `${category}.json`);
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+}
+
 // Combined NSE API tests - network and unit tests
 describe('NSE API - All Tests', () => {
   // Use a shared directory and single NSE instance for all tests
@@ -26,11 +37,13 @@ describe('NSE API - All Tests', () => {
   describe('Basic Network Tests', () => {
     it('fetches market status', async () => {
       const status = await nse.status();
+      writeOutput('market-status', status);
       expect(status).toBeTruthy();
     });
 
     it('looks up a known symbol', async () => {
       const results = await nse.lookup('INFY');
+      writeOutput('lookup-infy', results);
       expect(results).toBeTruthy();
       const list = Array.isArray(results)
         ? results
@@ -45,23 +58,29 @@ describe('NSE API - All Tests', () => {
   describe('Broad Coverage Tests', () => {
     it('status()', async () => {
       const res = await nse.status();
+      writeOutput('status', res);
       expect(res).toBeTruthy();
     });
 
     it('lookup()', async () => {
       const res = await nse.lookup('INFY');
+      writeOutput('lookup', res);
       expect(res).toBeTruthy();
     });
 
     it('equityMetaInfo(), quote(), equityQuote()', async () => {
       try {
         const meta = await nse.equityMetaInfo('INFY');
+        writeOutput('equity-meta-info', meta);
         expect(meta).toBeTruthy();
         const q1 = await nse.quote({ symbol: 'INFY', type: 'equity' });
+        writeOutput('quote-equity', q1);
         expect(q1).toBeTruthy();
         const q2 = await nse.quote({ symbol: 'INFY', type: 'equity', section: 'trade_info' });
+        writeOutput('quote-trade-info', q2);
         expect(q2).toBeTruthy();
         const simple = await nse.equityQuote('INFY');
+        writeOutput('equity-quote', simple);
         expect(simple).toBeTruthy();
       } catch (error) {
         if (error instanceof Error && error.message.includes('401')) {
@@ -75,11 +94,25 @@ describe('NSE API - All Tests', () => {
 
     it('listEquityStocksByIndex(), listIndices(), listEtf(), listSme(), listSgb()', async () => {
       try {
-        expect(await nse.listEquityStocksByIndex('NIFTY 50')).toBeTruthy();
-        expect(await nse.listIndices()).toBeTruthy();
-        expect(await nse.listEtf()).toBeTruthy();
-        expect(await nse.listSme()).toBeTruthy();
-        expect(await nse.listSgb()).toBeTruthy();
+        const stocksByIndex = await nse.listEquityStocksByIndex('NIFTY 50');
+        writeOutput('equity-stocks-by-index', stocksByIndex);
+        expect(stocksByIndex).toBeTruthy();
+        
+        const indices = await nse.listIndices();
+        writeOutput('indices', indices);
+        expect(indices).toBeTruthy();
+        
+        const etf = await nse.listEtf();
+        writeOutput('etf', etf);
+        expect(etf).toBeTruthy();
+        
+        const sme = await nse.listSme();
+        writeOutput('sme', sme);
+        expect(sme).toBeTruthy();
+        
+        const sgb = await nse.listSgb();
+        writeOutput('sgb', sgb);
+        expect(sgb).toBeTruthy();
       } catch (error) {
         if (error instanceof Error && error.message.includes('401')) {
           console.warn('Skipping equity lists tests due to API rate limiting (401)');
@@ -92,16 +125,23 @@ describe('NSE API - All Tests', () => {
 
     it('IPO listings: current, upcoming, past', async () => {
       try {
-        expect(await nse.listCurrentIPO()).toBeTruthy();
-        expect(await nse.listUpcomingIPO()).toBeTruthy();
+        const currentIPO = await nse.listCurrentIPO();
+        writeOutput('ipo-current', currentIPO);
+        expect(currentIPO).toBeTruthy();
+        
+        const upcomingIPO = await nse.listUpcomingIPO();
+        writeOutput('ipo-upcoming', upcomingIPO);
+        expect(upcomingIPO).toBeTruthy();
+        
         const to = new Date();
         const from = new Date(to.getTime() - 60 * 86400000);
-        expect(await nse.listPastIPO(from, to)).toBeTruthy();
+        const pastIPO = await nse.listPastIPO(from, to);
+        writeOutput('ipo-past', pastIPO);
+        expect(pastIPO).toBeTruthy();
       } catch (error) {
-        // Skip test if API returns 401 (rate limiting/anti-bot measures)
         if (error instanceof Error && error.message.includes('401')) {
           console.warn('Skipping IPO test due to API rate limiting (401)');
-          expect(true).toBe(true); // Mark as passed
+          expect(true).toBe(true);
         } else {
           throw error;
         }
@@ -110,13 +150,17 @@ describe('NSE API - All Tests', () => {
 
     it('circulars() and blockDeals()', async () => {
       try {
-        expect(await nse.circulars()).toBeTruthy();
-        expect(await nse.blockDeals()).toBeTruthy();
+        const circulars = await nse.circulars();
+        writeOutput('circulars', circulars);
+        expect(circulars).toBeTruthy();
+        
+        const blockDeals = await nse.blockDeals();
+        writeOutput('block-deals', blockDeals);
+        expect(blockDeals).toBeTruthy();
       } catch (error) {
-        // Skip test if API returns 401 (rate limiting/anti-bot measures)
         if (error instanceof Error && error.message.includes('401')) {
           console.warn('Skipping circulars/blockDeals test due to API rate limiting (401)');
-          expect(true).toBe(true); // Mark as passed
+          expect(true).toBe(true);
         } else {
           throw error;
         }
@@ -125,28 +169,29 @@ describe('NSE API - All Tests', () => {
 
     it('fnoLots()', async () => {
       const lots = await nse.fnoLots();
+      writeOutput('fno-lots', lots);
       expect(lots && typeof lots).toBe('object');
     });
 
     it('optionChain(), getExpiryDatesV3(), compileOptionChain()', async () => {
       try {
-        // optionChain now uses v3 API internally
         const chain = await nse.optionChain('NIFTY');
+        writeOutput('option-chain', chain);
         expect(chain).toBeTruthy();
         expect(chain.records).toBeTruthy();
         expect(chain.records.underlyingValue).toBeGreaterThan(0);
         expect(Array.isArray(chain.records.data)).toBe(true);
 
-        // Get expiry dates using v3 API
         const expiries = await nse.getExpiryDatesV3('NIFTY');
+        writeOutput('expiry-dates-v3', expiries);
         expect(Array.isArray(expiries)).toBe(true);
         expect(expiries.length).toBeGreaterThan(0);
 
         if (expiries.length > 0) {
-          // Parse expiry string to Date for legacy compileOptionChain
           const [dd, mmm, yyyy] = expiries[0].split('-');
           const expiryDate = new Date(`${dd} ${mmm} ${yyyy}`);
           const oc = await nse.compileOptionChain('NIFTY', expiryDate);
+          writeOutput('compiled-option-chain', oc);
           expect(oc).toBeTruthy();
           expect(oc.chain).toBeTruthy();
           expect(oc.underlying).toBeGreaterThan(0);
@@ -164,35 +209,35 @@ describe('NSE API - All Tests', () => {
 
     it('optionChainV3(), compileOptionChainV3(), filteredOptionChainV3()', async () => {
       try {
-        // Test v3 option chain without expiry (gets all expiries)
         const chainV3 = await nse.optionChainV3({ symbol: 'NIFTY' });
+        writeOutput('option-chain-v3', chainV3);
         expect(chainV3).toBeTruthy();
         expect(chainV3.records).toBeTruthy();
         expect(chainV3.records.underlyingValue).toBeGreaterThan(0);
         expect(Array.isArray(chainV3.records.data)).toBe(true);
 
-        // Test getting expiry dates
         const expiriesV3 = await nse.getExpiryDatesV3('NIFTY');
+        writeOutput('expiry-dates-v3-2', expiriesV3);
         expect(Array.isArray(expiriesV3)).toBe(true);
         expect(expiriesV3.length).toBeGreaterThan(0);
 
-        // Test v3 option chain with specific expiry
         if (expiriesV3.length > 0) {
           const expiry = expiriesV3[0];
           const chainWithExpiry = await nse.optionChainV3({ symbol: 'NIFTY', expiry });
+          writeOutput('option-chain-v3-with-expiry', chainWithExpiry);
           expect(chainWithExpiry).toBeTruthy();
           expect(chainWithExpiry.records.data.length).toBeGreaterThan(0);
 
-          // Test compiled option chain v3
           const compiledV3 = await nse.compileOptionChainV3('NIFTY', expiry);
+          writeOutput('compiled-option-chain-v3', compiledV3);
           expect(compiledV3).toBeTruthy();
           expect(compiledV3.chain).toBeTruthy();
           expect(compiledV3.underlying).toBeGreaterThan(0);
           expect(compiledV3.atm).toBeGreaterThan(0);
           expect(typeof compiledV3.pcr).toBe('number');
 
-          // Test filtered option chain v3
           const filteredV3 = await nse.filteredOptionChainV3('NIFTY', expiry, 5);
+          writeOutput('filtered-option-chain-v3', filteredV3);
           expect(filteredV3).toBeTruthy();
           expect(filteredV3.underlyingValue).toBeGreaterThan(0);
           expect(filteredV3.atmStrike).toBeGreaterThan(0);
@@ -209,29 +254,32 @@ describe('NSE API - All Tests', () => {
     });
 
     it('holidays()', async () => {
-      expect(await nse.holidays('trading')).toBeTruthy();
-      expect(await nse.holidays('clearing')).toBeTruthy();
+      const tradingHolidays = await nse.holidays('trading');
+      writeOutput('holidays-trading', tradingHolidays);
+      expect(tradingHolidays).toBeTruthy();
+      
+      const clearingHolidays = await nse.holidays('clearing');
+      writeOutput('holidays-clearing', clearingHolidays);
+      expect(clearingHolidays).toBeTruthy();
     });
 
-    it('historical: equity, vix, fno, index', async () => {
+    it('historical: equity, vix, fno', async () => {
       try {
         const eq = await nse.fetch_equity_historical_data({ symbol: 'INFY' });
+        writeOutput('historical-equity', eq);
         expect(Array.isArray(eq)).toBe(true);
 
         const vix = await nse.fetch_historical_vix_data({ from_date: new Date(Date.now() - 7 * 86400000), to_date: new Date() });
+        writeOutput('historical-vix', vix);
         expect(Array.isArray(vix)).toBe(true);
 
         const fno = await nse.fetch_historical_fno_data({ symbol: 'NIFTY', instrument: 'FUTIDX', from_date: new Date(Date.now() - 7 * 86400000), to_date: new Date() });
+        writeOutput('historical-fno', fno);
         expect(Array.isArray(fno)).toBe(true);
-
-        const idx = await nse.fetch_historical_index_data({ index: 'NIFTY 50', from_date: new Date(Date.now() - 7 * 86400000), to_date: new Date() });
-        expect(idx && typeof idx).toBe('object');
-        expect(Array.isArray(idx.price)).toBe(true);
       } catch (error) {
-        // Skip test if API returns 401 (rate limiting/anti-bot measures)
         if (error instanceof Error && error.message.includes('401')) {
           console.warn('Skipping historical data test due to API rate limiting (401)');
-          expect(true).toBe(true); // Mark as passed
+          expect(true).toBe(true);
         } else {
           throw error;
         }
@@ -241,10 +289,15 @@ describe('NSE API - All Tests', () => {
     it('underlyings, indices, daily report metadata', async () => {
       try {
         const under = await nse.fetch_fno_underlying();
+        writeOutput('fno-underlying', under);
         expect(under && typeof under).toBe('object');
+        
         const names = await nse.fetch_index_names();
+        writeOutput('index-names', names);
         expect(names && typeof names).toBe('object');
+        
         const meta = await nse.fetch_daily_reports_file_metadata('CM');
+        writeOutput('daily-reports-metadata', meta);
         expect(meta).toBeTruthy();
       } catch (error) {
         if (error instanceof Error && error.message.includes('401')) {
@@ -259,13 +312,16 @@ describe('NSE API - All Tests', () => {
     it('gainers() and losers()', async () => {
       try {
         const marketData = await nse.listEquityStocksByIndex('NIFTY 50');
+        writeOutput('market-data-nifty50', marketData);
         expect(marketData).toBeTruthy();
 
         const gainers = nse.gainers(marketData, 10);
+        writeOutput('gainers', gainers);
         expect(gainers).toBeTruthy();
         expect(Array.isArray(gainers)).toBe(true);
 
         const losers = nse.losers(marketData, 10);
+        writeOutput('losers', losers);
         expect(losers).toBeTruthy();
         expect(Array.isArray(losers)).toBe(true);
       } catch (error) {
@@ -282,10 +338,21 @@ describe('NSE API - All Tests', () => {
   describe('Additional Endpoints', () => {
     it('corporate: actions, announcements, boardMeetings, annual_reports', async () => {
       try {
-        expect(await nse.actions({ segment: 'equities', symbol: 'INFY' })).toBeTruthy();
-        expect(await nse.announcements({ index: 'equities', symbol: 'INFY' })).toBeTruthy();
-        expect(await nse.boardMeetings({ index: 'equities', symbol: 'INFY' })).toBeTruthy();
-        expect(await nse.annual_reports('INFY')).toBeTruthy();
+        const actions = await nse.actions({ segment: 'equities', symbol: 'INFY' });
+        writeOutput('corporate-actions', actions);
+        expect(actions).toBeTruthy();
+        
+        const announcements = await nse.announcements({ index: 'equities', symbol: 'INFY' });
+        writeOutput('announcements', announcements);
+        expect(announcements).toBeTruthy();
+        
+        const boardMeetings = await nse.boardMeetings({ index: 'equities', symbol: 'INFY' });
+        writeOutput('board-meetings', boardMeetings);
+        expect(boardMeetings).toBeTruthy();
+        
+        const annualReports = await nse.annual_reports('INFY');
+        writeOutput('annual-reports', annualReports);
+        expect(annualReports).toBeTruthy();
       } catch (error) {
         if (error instanceof Error && error.message.includes('401')) {
           console.warn('Skipping corporate actions tests due to API rate limiting (401)');
@@ -301,6 +368,7 @@ describe('NSE API - All Tests', () => {
       const from = new Date(to.getTime() - 7 * 86400000);
       try {
         const data = await nse.bulkdeals(from, to);
+        writeOutput('bulk-deals', data);
         expect(Array.isArray(data)).toBe(true);
       } catch (e) {
         expect(true).toBe(true);

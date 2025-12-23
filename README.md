@@ -142,7 +142,6 @@ const results = await bse.lookupSymbol('reliance');
 - `actions(options)` - Corporate actions
 - `announcements(options)` - Corporate announcements
 - `lookupSymbol(text)` - Search symbols
-- `fetchHistoricalIndexData(options)` - Historical index data
 
 ## Configuration
 

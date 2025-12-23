@@ -80,12 +80,6 @@ export interface FnoHistoricalParams {
   strike_price?: number;
 }
 
-export interface IndexHistoricalParams {
-  index: string;
-  from_date?: Date;
-  to_date?: Date;
-}
-
 export interface EquityQuoteData {
   date?: string;
   open?: number;
@@ -167,11 +161,6 @@ export interface CompiledOptionChain {
   poiTotal: number;
   pcr: number;
   chain: Record<string, any>;
-}
-
-export interface IndexHistoricalData {
-  price: any[];
-  turnover: any[];
 }
 
 export interface FnoUnderlyingData {

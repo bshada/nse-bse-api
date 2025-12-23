@@ -131,7 +131,6 @@ export class NSEClient {
   async fetch_equity_historical_data(params: any) { return this.historical.fetchEquityHistoricalData(params); }
   async fetch_historical_vix_data(params: any = {}) { return this.historical.fetchHistoricalVixData(params); }
   async fetch_historical_fno_data(params: any) { return this.historical.fetchHistoricalFnoData(params); }
-  async fetch_historical_index_data(params: any) { return this.historical.fetchHistoricalIndexData(params); }
   async fetch_fno_underlying() { return this.historical.fetchFnoUnderlying(); }
   async fetch_index_names() { return this.historical.fetchIndexNames(); }
   async fetch_daily_reports_file_metadata(segment: any = "CM") { return this.market.getDailyReportsFileMetadata(segment); }

@@ -43,3 +43,6 @@ bse-downloads/
 *.tmp
 *.temp
 tmp/
+
+# Test outputs
+test-outputs/
