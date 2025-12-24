@@ -1,4 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import http from 'http';
+import https from 'https';
 import * as fs from 'fs';
 import * as path from 'path';
 import { 
@@ -51,6 +53,11 @@ export class BSE {
 
     const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:138.0) Gecko/20100101 Firefox/138.0';
 
+    // Use insecureHTTPParser to handle BSE's malformed HTTP headers
+    // (they sometimes include trailing whitespace which violates HTTP spec)
+    const httpAgent = new http.Agent({ keepAlive: true });
+    const httpsAgent = new https.Agent({ keepAlive: true });
+
     this.session = axios.create({
       timeout: config.timeout || 10000,
       headers: {
@@ -61,6 +68,10 @@ export class BSE {
         'Referer': BSE.baseUrl,
         'Connection': 'keep-alive',
       },
+      httpAgent,
+      httpsAgent,
+      // Allow lenient HTTP parsing for BSE's non-compliant headers
+      insecureHTTPParser: true,
     });
   }
 
